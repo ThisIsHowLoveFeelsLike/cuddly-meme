@@ -1,0 +1,517 @@
+local UI = loadstring(game:HttpGet("https://xan.bar/init.lua"))()
+local ESP = loadstring(game:HttpGet("https://kiriot22.com/releases/ESP.lua"))()
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local respawn = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("sendCharacterSpawnRequest")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+
+local playerScripts = player:WaitForChild("PlayerScripts", 5) -- waits up to 5 seconds
+
+if playerScripts then
+    local popup = playerScripts:FindFirstChild("popup")
+    if popup then
+        print("Popup found:", popup.Name)
+    else
+        print("Popup not found yet, will check later")
+        -- Optionally listen for when it's added
+        playerScripts.ChildAdded:Connect(function(child)
+            if child.Name == "popup" then
+                print("Popup added:", child.Name)
+            end
+        end)
+    end
+else
+    warn("PlayerScripts not found within timeout")
+end
+
+UI.Loading("@creepstu")
+
+local function tag(this)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = this
+
+    highlight.FillColor = Color3.fromRGB(255, 245, 200)
+    highlight.OutlineColor = Color3.fromRGB(240, 200, 120)
+    highlight.FillTransparency = 0.3
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Adornee = this
+end
+
+local Window = UI.New({
+    Title = "Slendytubbies\nVS Redux",
+    Theme = "Default",
+    Size = UDim2.new(0, 600, 0, 400),
+    ShowUserInfo = false,
+    ShowActiveList = true
+})
+
+local Main = Window:AddTab("General", UI.Icons.ESP)
+Main:AddSection("Features")
+
+Main:AddButton("Collect Custards", function()
+    for _, x in pairs(workspace.game.gameCustard:GetDescendants()) do
+        if x.Name == "Touch" then
+            firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, x, 0)
+            task.wait(.5)
+        end
+    end
+end)
+
+Main:AddButton("Collect Custards pt. ii", function()
+    for _, x in pairs(workspace.game.gameCustard:GetDescendants()) do
+        if x.Name == "Touch" then
+            x.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+            task.wait(.5)
+        end
+    end
+end)
+
+Main:AddButton("Teleport to Custards", function()
+    for _, x in pairs(workspace.game.gameCustard:GetDescendants()) do
+        if x.Name == "Touch" then
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = x.CFrame
+            task.wait(.5)
+        end
+    end
+end)
+
+Main:CreateRetroButton({
+    Name = "Auto-Farm",
+    Callback = function()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+    local localPlayer = Players.LocalPlayer
+    local respawn = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("sendCharacterSpawnRequest")
+
+    local function startLoop(character)
+        task.spawn(function()
+            while character.Parent do
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _, x in pairs(workspace.game.gameCustard:GetDescendants()) do
+                        if x:IsA("BasePart") and x.Name == "Touch" then
+                            x.CFrame = hrp.CFrame
+                            task.wait(2)
+                        end
+                    end
+                end
+
+                task.wait(2)
+                respawn:FireServer("Player")
+            end
+        end)
+    end
+
+    if localPlayer.Character then
+        startLoop(localPlayer.Character)
+    end
+
+    localPlayer.CharacterAdded:Connect(function(char)
+        startLoop(char)
+    end)
+end})
+
+local running = false
+local localPlayer = game.Players.LocalPlayer
+
+local gameFolder = workspace:WaitForChild("game")
+local playersFolder = gameFolder:WaitForChild("Players")
+
+Main:AddToggle("Quick Respawn", { Default = false }, function(v)
+    if v then
+        running = true
+        task.spawn(function()
+            while running do
+                local model = playersFolder:FindFirstChild(localPlayer.Name)
+                if not model or not model:IsA("Model") then
+                    respawn:FireServer("Player")
+                end
+                task.wait(.1)
+            end
+        end)
+    else
+        running = false
+    end
+end)
+
+Main:AddToggle("Show Custards", { Default = false }, function(v)
+    if v then
+        local function addBillboard(bastard)
+            if bastard:FindFirstChild("CustardBillboard") then return end
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "CustardBillboard"
+            billboard.Size = UDim2.new(1, 50, 1, 50)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = bastard
+            billboard.Adornee = bastard
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = Color3.new(0, 170, 0)
+            textLabel.TextStrokeTransparency = 0
+            textLabel.Font = Enum.Font.RobotoMono
+            textLabel.TextScaled = false
+            textLabel.TextSize = 15
+            textLabel.Text = "Custard"
+            textLabel.Parent = billboard
+        end
+
+        for _, d in pairs(workspace.game.gameCustard:GetDescendants()) do
+            if d:IsA("MeshPart") and d.Name == "bowl" then
+                addBillboard(d)
+            end
+        end
+    else
+        for _, x in pairs(workspace.game.gameCustard:GetDescendants()) do
+            if x.Name == "CustardBillboard" then
+                x:Destroy()
+            end
+        end
+    end
+end)
+
+Main:AddToggle("Highlight Custards", { Default = false }, function(state)
+    if state then
+        for x, y in pairs(workspace.game.gameCustard:GetDescendants()) do
+            if y:IsA("MeshPart") and y.Name == "bowl" then
+                tag(y)
+            end
+        end
+    else
+        for _, v in pairs(workspace.game.gameCustard:GetDescendants()) do
+            if v:IsA("Highlight") then
+                v:Destroy()
+            end
+        end
+    end
+end)
+
+Main:AddToggle("Show Monsters", { Default = false }, function(state)
+    if state then
+        local monstersFolder = workspace.game.Monsters
+
+        local function addBillboard(monster)
+            if monster:FindFirstChild("MonsterBillboard") then return end
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "MonsterBillboard"
+            billboard.Size = UDim2.new(1, 50, 1, 50)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = monster
+            billboard.Adornee = monster
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = Color3.new(1, 0, 0)
+            textLabel.TextStrokeTransparency = 0
+            textLabel.Font = Enum.Font.RobotoMono
+            textLabel.TextScaled = false
+            textLabel.TextSize = 15
+            textLabel.Text = game.Players[monster.Name].DisplayName
+            textLabel.Parent = billboard
+        end
+
+        local function removeBillboard(monster)
+            local billboard = monster:FindFirstChild("MonsterBillboard")
+            if billboard then
+                billboard:Destroy()
+            end
+        end
+
+        for _, child in ipairs(monstersFolder:GetChildren()) do
+            addBillboard(child)
+        end
+
+        monstersFolder.ChildAdded:Connect(function(child)
+            addBillboard(child)
+        end)
+
+        monstersFolder.ChildRemoved:Connect(function(child)
+            removeBillboard(child)
+        end)
+    else
+        local monstersFolder = workspace.game.Monsters
+
+        if monstersFolder:FindFirstChild("ProcessConnections") then
+            local holder = monstersFolder.ProcessConnections
+            for _, conn in ipairs(holder:GetChildren()) do
+                if conn:IsA("ObjectValue") and conn.Value then
+                    conn.Value:Disconnect()
+                end
+            end
+            holder:Destroy()
+        end
+
+        for _, child in ipairs(monstersFolder:GetChildren()) do
+            local billboard = child:FindFirstChild("MonsterBillboard")
+            if billboard then
+                billboard:Destroy()
+            end
+        end
+    end
+end)
+
+local monstersFolder = workspace.game.Monsters
+
+local childAddedConn: RBXScriptConnection? = nil
+local childRemovedConn: RBXScriptConnection? = nil
+
+local function isAdornable(inst: Instance): boolean
+	return inst:IsA("Model") or inst:IsA("BasePart")
+end
+
+local function addHighlight(monster: Instance)
+	if not isAdornable(monster) then return end
+
+	if monster:FindFirstChild("MonsterHighlight") then return end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "MonsterHighlight"
+	highlight.FillColor = Color3.fromRGB(255, 0, 0)
+	highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+	highlight.FillTransparency = 1
+	highlight.OutlineTransparency = 0
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+	highlight.Adornee = monster
+	highlight.Parent = monster
+end
+
+local function removeHighlight(monster: Instance)
+	local hl = monster:FindFirstChild("MonsterHighlight")
+	if hl then
+		hl:Destroy()
+	end
+end
+
+Main:AddToggle("Highlight Monsters", { Default = false }, function(state)
+    if state then
+		for _, child in ipairs(monstersFolder:GetChildren()) do
+			addHighlight(child)
+		end
+
+		if not childAddedConn then
+			childAddedConn = monstersFolder.ChildAdded:Connect(function(child)
+				addHighlight(child)
+			end)
+		end
+
+		if not childRemovedConn then
+			childRemovedConn = monstersFolder.ChildRemoved:Connect(function(child)
+				removeHighlight(child)
+			end)
+		end
+	else
+		if childAddedConn then
+			childAddedConn:Disconnect()
+			childAddedConn = nil
+		end
+		if childRemovedConn then
+			childRemovedConn:Disconnect()
+			childRemovedConn = nil
+		end
+
+		for _, child in ipairs(monstersFolder:GetChildren()) do
+			removeHighlight(child)
+		end
+	end
+end)
+
+local Main2 = Window:AddTab("Misc", UI.Icons.Misc)
+Main2:AddSection("Features")
+
+Main2:AddButton("Infinite Zoom Distance", function()
+    RunService.RenderStepped:Connect(function()
+        game.Players.LocalPlayer.CameraMaxZoomDistance = math.huge
+    end)
+end)
+
+local nightVision = Lighting:FindFirstChild("NightVision")
+if not nightVision then
+    UI.QuickNotify("[NightVision] Color correction effect 'NightVision' not found in Lighting", 2)
+end
+
+local tintConn: RBXScriptConnection? = nil
+
+Main2:AddToggle("WHITE NightVision.TintColor", { Default = false }, function(state)
+    if not nightVision then return end
+    if state then
+        if tintConn and tintConn.Connected then return end
+
+        tintConn = RunService.Heartbeat:Connect(function()
+            nightVision.TintColor = Color3.fromRGB(255, 255, 255)
+        end)
+    else
+        if tintConn and tintConn.Connected then
+            tintConn:Disconnect()
+            tintConn = nil
+        end
+        nightVision.TintColor = Color3.fromRGB(17, 91, 80)
+    end
+end)
+
+Main2:AddToggle("Shiftlock in Third-Person", { Default = true }, function(state)
+    if state then
+        game:GetService("Players").LocalPlayer.PlayerData.shiftlock.Value = state
+    else
+        game:GetService("Players").LocalPlayer.PlayerData.shiftlock.Value = state
+    end
+end)
+
+Main2:AddButton("Remove Jump Scares", function()
+    local part = game:GetService("Players").LocalPlayer.PlayerGui.PlayerScripts:FindFirstChild("popup")
+
+    if part then
+        part:Destroy()
+    end
+end)
+
+Main2:AddButton("Remove Fogs", function()
+    while true do
+        Lighting.FogStart = 0
+        Lighting.FogEnd = 1000000
+        Lighting.FogColor = Color3.new(1, 1, 1)
+
+        task.wait(1)
+    end
+end)
+
+local playWithDoors = false
+
+Main2:AddToggle("Play with Doors", { Default = false }, function(state)
+    playWithDoors = state
+
+    if state then
+        task.spawn(function()
+            while playWithDoors do
+                task.wait(.5)
+                for _, j in pairs(workspace.Level.map.BlockAttack:GetDescendants()) do
+                    if j:IsA("ProximityPrompt") then
+                        fireproximityprompt(j)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+local Main3 = Window:AddTab("Monsters", UI.Icons.Aimbot)
+Main3:AddSection("Features")
+
+Main3:AddToggle("Show Victims", { Default = false }, function(state)
+    if state then
+        local victimsFolder = workspace.game.Players
+
+        local function addBillboard(player)
+            if player:FindFirstChild("PlayerBillboard") then return end
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "PlayerBillboard"
+            billboard.Size = UDim2.new(1, 50, 1, 50)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = player
+            billboard.Adornee = player
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = Color3.new(1, 1, 1)
+            textLabel.TextStrokeTransparency = 0
+            textLabel.Font = Enum.Font.RobotoMono
+            textLabel.TextScaled = false
+            textLabel.TextSize = 15
+            textLabel.Text = game.Players[player.Name].DisplayName
+            textLabel.Parent = billboard
+        end
+
+        local function removeBillboard(player)
+            local billboard = player:FindFirstChild("PlayerBillboard")
+            if billboard then
+                billboard:Destroy()
+            end
+        end
+
+        for _, child in ipairs(victimsFolder:GetChildren()) do
+            addBillboard(child)
+        end
+
+        victimsFolder.ChildAdded:Connect(function(child)
+            addBillboard(child)
+        end)
+
+        victimsFolder.ChildRemoved:Connect(function(child)
+            removeBillboard(child)
+        end)
+    else
+        local victimsFolder = workspace.game.Players
+
+        if victimsFolder:FindFirstChild("ProcessConnections") then
+            local holder = victimsFolder.ProcessConnections
+            for _, conn in ipairs(holder:GetChildren()) do
+                if conn:IsA("ObjectValue") and conn.Value then
+                    conn.Value:Disconnect()
+                end
+            end
+            holder:Destroy()
+        end
+
+        for _, child in ipairs(victimsFolder:GetChildren()) do
+            local billboard = child:FindFirstChild("PlayerBillboard")
+            if billboard then
+                billboard:Destroy()
+            end
+        end
+    end
+end)
+
+local jumpBoostEnabled = false
+local originalJumpPower = nil
+
+Main2:AddToggle("Jump Higher", { Default = false }, function(state)
+    jumpBoostEnabled = state
+
+    local player = game.Players.LocalPlayer
+    local humanoid = player and player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        if state then
+            originalJumpPower = humanoid.UseJumpPower and humanoid.JumpPower or humanoid.JumpHeight
+
+            task.spawn(function()
+                while jumpBoostEnabled and humanoid.Parent do
+                    task.wait(0.2)
+                    if humanoid.UseJumpPower then
+                        humanoid.JumpPower = 40
+                    else
+                        humanoid.JumpHeight = 5
+                    end
+                end
+            end)
+        else
+            if humanoid.UseJumpPower and originalJumpPower then
+                humanoid.JumpPower = originalJumpPower
+            elseif originalJumpPower then
+                humanoid.JumpHeight = originalJumpPower
+            end
+        end
+    end
+end)
+
+Main2:AddToggle("Better Shoes Grip", { Default = false }, function(state)
+    for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            if state then
+                v.CustomPhysicalProperties = PhysicalProperties.new(1, 1, 0)
+            else
+                v.CustomPhysicalProperties = nil
+            end
+        end
+    end
+end)
